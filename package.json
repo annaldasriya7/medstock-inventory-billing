@@ -1,0 +1,31 @@
+{
+  "name": "medstock-ai",
+  "version": "1.0.0",
+  "description": "Intelligent Medicine Inventory, Billing, Demand Forecasting and Expiry Risk Management System",
+  "main": "server/server.js",
+  "scripts": {
+    "server": "npm run start --prefix server",
+    "server:dev": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "client:build": "npm run build --prefix client",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "build": "npm run client:build",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "seed": "npm run seed --prefix server"
+  },
+  "keywords": [
+    "pharmacy",
+    "inventory-management",
+    "ai-forecasting",
+    "fefo",
+    "billing",
+    "expiry-risk",
+    "demand-prediction",
+    "ocr"
+  ],
+  "author": "MedStock AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
