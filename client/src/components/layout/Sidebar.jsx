@@ -15,31 +15,30 @@ import {
   FileBarChart2,
   Bell,
   Bot,
-  Settings
+  Settings,
+  PackagePlus,
+  Scale,
+  ShieldAlert,
+  Receipt,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAlerts } from '../../context/AlertContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, openSwitcher } = useAuth();
   const { unreadCount } = useAlerts();
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'New Sale (POS)', path: '/pos', icon: ShoppingCart, highlight: true },
+    { label: 'New Sale', path: '/pos', icon: ShoppingCart, highlight: true },
     { label: 'Scan Medicine', path: '/scan', icon: ScanLine },
-    { label: 'Inventory', path: '/inventory', icon: Boxes },
-    { label: 'Batches (FEFO)', path: '/batches', icon: Layers },
-    { label: 'Medicines Catalog', path: '/medicines', icon: Pill },
-    { label: 'Suppliers', path: '/suppliers', icon: Truck },
+    { label: 'Medicine Inventory', path: '/inventory', icon: Boxes },
+    { label: 'Medicine Catalog', path: '/medicines', icon: Pill },
+    { label: 'Bill History & Reprint', path: '/bill-history', icon: Receipt },
+    { label: 'Staff Activity', path: '/staff', icon: Users },
     { label: 'Transactions', path: '/transactions', icon: ReceiptText },
-    { label: 'AI Demand Forecast', path: '/predictions', icon: TrendingUp },
-    { label: 'Expiry & Wastage Risk', path: '/expiry-risk', icon: AlertTriangle },
-    { label: 'What-If Simulator', path: '/simulator', icon: SlidersHorizontal },
-    { label: 'Reports & Analytics', path: '/reports', icon: FileBarChart2 },
-    { label: 'Alert Center', path: '/alerts', icon: Bell, badge: unreadCount },
-    { label: 'AI Inventory Assistant', path: '/assistant', icon: Bot, aiBadge: true },
-    { label: 'Settings', path: '/settings', icon: Settings, adminOnly: true }
+    { label: 'Alert Center', path: '/alerts', icon: Bell, badge: unreadCount }
   ];
 
   return (
@@ -88,6 +87,21 @@ const Sidebar = ({ isOpen, onClose }) => {
           >
             {user?.role || 'Staff'}
           </span>
+        </div>
+
+        {/* Switch Account Quick Action */}
+        <div className="px-3 mb-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (onClose) onClose();
+              openSwitcher();
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 rounded-xl transition-all shadow-sm"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Switch Account</span>
+          </button>
         </div>
 
         {/* Navigation Items */}

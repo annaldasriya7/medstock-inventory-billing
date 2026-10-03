@@ -4,7 +4,9 @@ const {
   createSale,
   getTransactions,
   getTransactionById,
-  previewCartFefo
+  previewCartFefo,
+  logBillReprint,
+  processSalesReturn
 } = require('../controllers/transactionController');
 const { protect } = require('../middleware/auth');
 
@@ -14,5 +16,7 @@ router.route('/')
 
 router.post('/preview-fefo', protect, previewCartFefo);
 router.get('/:id', protect, getTransactionById);
+router.post('/:id/reprint-log', protect, logBillReprint);
+router.post('/:id/return', protect, processSalesReturn);
 
 module.exports = router;

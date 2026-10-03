@@ -53,9 +53,43 @@ const runManualSeed = async () => {
       password: 'Admin@123456',
       role: 'admin',
       branch: branch._id,
-      phone: '+91 98765 00001'
+      phone: '+91 98765 00001',
+      isActive: true
     });
     console.log('[Seed] Created default Admin account: admin@medstock.ai / Admin@123456');
+  }
+
+  // Ensure Administrator "riya" exists with proper admin role and credentials
+  let riyaAdmin = await User.findOne({
+    $or: [
+      { email: 'riya@medstock.ai' },
+      { name: new RegExp('^riya$', 'i') }
+    ]
+  });
+  if (!riyaAdmin) {
+    riyaAdmin = await User.create({
+      name: 'riya',
+      email: 'riya@medstock.ai',
+      password: 'Admin@123456',
+      role: 'admin',
+      branch: branch._id,
+      phone: '+91 98765 00003',
+      isActive: true
+    });
+    console.log('[Seed] Created default Administrator account: riya / riya@medstock.ai / Admin@123456');
+  } else {
+    let modified = false;
+    if (riyaAdmin.role !== 'admin') {
+      riyaAdmin.role = 'admin';
+      modified = true;
+    }
+    if (!riyaAdmin.isActive) {
+      riyaAdmin.isActive = true;
+      modified = true;
+    }
+    if (modified) {
+      await riyaAdmin.save();
+    }
   }
 
   let staff = await User.findOne({ email: 'staff@medstock.ai' });
@@ -66,7 +100,8 @@ const runManualSeed = async () => {
       password: 'Staff@123456',
       role: 'staff',
       branch: branch._id,
-      phone: '+91 98765 00002'
+      phone: '+91 98765 00002',
+      isActive: true
     });
     console.log('[Seed] Created default Staff account: staff@medstock.ai / Staff@123456');
   }
@@ -200,6 +235,233 @@ const runManualSeed = async () => {
     console.log('[Seed] Created Amoxicillin 500mg with multi-batch FEFO demo data');
   }
 
+  // Define extra realistic medicines across various categories
+  const additionalMedicines = [
+    {
+      barcode: 'MEDAZEE500',
+      name: 'Azithromycin 500mg',
+      genericName: 'Azithromycin',
+      brand: 'Azee 500',
+      strength: '500 mg',
+      dosageForm: 'Tablet',
+      category: 'Antibiotics',
+      manufacturer: 'Cipla Ltd',
+      unitsPerStrip: 5,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: true,
+      reorderLevel: 25,
+      maximumStock: 200,
+      batchNumber: 'AZI-2026-01',
+      expiryDays: 450,
+      quantity: 60,
+      purchasePrice: 12,
+      sellingPrice: 22
+    },
+    {
+      barcode: 'MEDMET500',
+      name: 'Metformin 500mg',
+      genericName: 'Metformin Hydrochloride',
+      brand: 'Glycomet 500',
+      strength: '500 mg',
+      dosageForm: 'Tablet',
+      category: 'Antidiabetic',
+      manufacturer: 'USV Pvt Ltd',
+      unitsPerStrip: 20,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: true,
+      reorderLevel: 50,
+      maximumStock: 600,
+      batchNumber: 'MET-2026-11',
+      expiryDays: 520,
+      quantity: 150,
+      purchasePrice: 2.5,
+      sellingPrice: 4.5
+    },
+    {
+      barcode: 'MEDPAN040',
+      name: 'Pantoprazole 40mg',
+      genericName: 'Pantoprazole',
+      brand: 'Pan 40',
+      strength: '40 mg',
+      dosageForm: 'Tablet',
+      category: 'Gastrointestinal',
+      manufacturer: 'Alkem Laboratories',
+      unitsPerStrip: 15,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: false,
+      reorderLevel: 30,
+      maximumStock: 350,
+      batchNumber: 'PAN-2026-08',
+      expiryDays: 380,
+      quantity: 80,
+      purchasePrice: 5,
+      sellingPrice: 9
+    },
+    {
+      barcode: 'MEDCET010',
+      name: 'Cetirizine 10mg',
+      genericName: 'Cetirizine Hydrochloride',
+      brand: 'Cetzine 10',
+      strength: '10 mg',
+      dosageForm: 'Tablet',
+      category: 'Antiallergic',
+      manufacturer: 'Dr. Reddy’s Laboratories',
+      unitsPerStrip: 10,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: false,
+      reorderLevel: 40,
+      maximumStock: 500,
+      batchNumber: 'CET-2026-04',
+      expiryDays: 600,
+      quantity: 120,
+      purchasePrice: 1.8,
+      sellingPrice: 3.5
+    },
+    {
+      barcode: 'MEDIBU400',
+      name: 'Ibuprofen 400mg',
+      genericName: 'Ibuprofen',
+      brand: 'Brufen 400',
+      strength: '400 mg',
+      dosageForm: 'Tablet',
+      category: 'Analgesics',
+      manufacturer: 'Abbott Healthcare',
+      unitsPerStrip: 15,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: false,
+      reorderLevel: 30,
+      maximumStock: 300,
+      batchNumber: 'IBU-2026-09',
+      expiryDays: 480,
+      quantity: 90,
+      purchasePrice: 2.8,
+      sellingPrice: 5
+    },
+    {
+      barcode: 'MEDATO010',
+      name: 'Atorvastatin 10mg',
+      genericName: 'Atorvastatin Calcium',
+      brand: 'Atorva 10',
+      strength: '10 mg',
+      dosageForm: 'Tablet',
+      category: 'Cardiovascular',
+      manufacturer: 'Zydus Cadila',
+      unitsPerStrip: 10,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: true,
+      reorderLevel: 25,
+      maximumStock: 250,
+      batchNumber: 'ATO-2026-15',
+      expiryDays: 365,
+      quantity: 75,
+      purchasePrice: 8,
+      sellingPrice: 14
+    },
+    {
+      barcode: 'MEDASC100',
+      name: 'Ascoril D+ Cough Syrup 100ml',
+      genericName: 'Dextromethorphan + Chlorpheniramine',
+      brand: 'Ascoril D+',
+      strength: '100 ml',
+      dosageForm: 'Syrup',
+      category: 'Respiratory',
+      manufacturer: 'Glenmark Pharmaceuticals',
+      unitsPerStrip: 1,
+      unitOfMeasurement: 'Bottle',
+      prescriptionRequired: false,
+      reorderLevel: 15,
+      maximumStock: 100,
+      batchNumber: 'ASC-2026-03',
+      expiryDays: 300,
+      quantity: 40,
+      purchasePrice: 55,
+      sellingPrice: 85
+    },
+    {
+      barcode: 'MEDLIM500',
+      name: 'Vitamin C + Zinc Chewable',
+      genericName: 'Ascorbic Acid + Sodium Ascorbate',
+      brand: 'Limcee Chewable',
+      strength: '500 mg',
+      dosageForm: 'Tablet',
+      category: 'Vitamins & Supplements',
+      manufacturer: 'Abbott India',
+      unitsPerStrip: 15,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: false,
+      reorderLevel: 50,
+      maximumStock: 500,
+      batchNumber: 'LIM-2026-07',
+      expiryDays: 650,
+      quantity: 200,
+      purchasePrice: 1.2,
+      sellingPrice: 2.5
+    },
+    {
+      barcode: 'MEDOME020',
+      name: 'Omeprazole 20mg',
+      genericName: 'Omeprazole',
+      brand: 'Omez 20',
+      strength: '20 mg',
+      dosageForm: 'Capsule',
+      category: 'Gastrointestinal',
+      manufacturer: 'Dr. Reddy’s Laboratories',
+      unitsPerStrip: 15,
+      unitOfMeasurement: 'Strip',
+      prescriptionRequired: false,
+      reorderLevel: 30,
+      maximumStock: 300,
+      batchNumber: 'OME-2026-02',
+      expiryDays: 410,
+      quantity: 110,
+      purchasePrice: 3.2,
+      sellingPrice: 6.5
+    }
+  ];
+
+  for (const item of additionalMedicines) {
+    let med = await Medicine.findOne({ barcode: item.barcode });
+    if (!med) {
+      med = await Medicine.create({
+        name: item.name,
+        genericName: item.genericName,
+        brand: item.brand,
+        strength: item.strength,
+        dosageForm: item.dosageForm,
+        category: item.category,
+        manufacturer: item.manufacturer,
+        barcode: item.barcode,
+        qrCode: `QR-${item.barcode}`,
+        unitsPerStrip: item.unitsPerStrip,
+        unitOfMeasurement: item.unitOfMeasurement,
+        prescriptionRequired: item.prescriptionRequired,
+        reorderLevel: item.reorderLevel,
+        maximumStock: item.maximumStock,
+        supplier: supplier._id,
+        supplierName: supplier.name,
+        branch: branch._id
+      });
+
+      const batch = await Batch.create({
+        medicineId: med._id,
+        batchNumber: item.batchNumber,
+        manufacturingDate: new Date('2026-01-01'),
+        expiryDate: new Date(Date.now() + item.expiryDays * 24 * 60 * 60 * 1000),
+        quantity: item.quantity,
+        initialQuantity: item.quantity,
+        purchasePrice: item.purchasePrice,
+        sellingPrice: item.sellingPrice,
+        supplierId: supplier._id,
+        supplierName: supplier.name,
+        branch: branch._id,
+        status: 'Active'
+      });
+      batch.updateStatus();
+      await batch.save();
+      console.log(`[Seed] Created ${item.name} with batch ${item.batchNumber}`);
+    }
+  }
+
   // Add historical consumption events over past 7 days for Paracetamol so AI algorithms can show real statistics!
   const existingRecords = await ConsumptionRecord.countDocuments({ medicineId: med1._id });
   if (existingRecords === 0) {
@@ -210,6 +472,30 @@ const runManualSeed = async () => {
       const recordDate = new Date(now.getTime() - dayAgo * 24 * 60 * 60 * 1000);
       const consumedQty = Math.floor(Math.random() * 6) + 8; // 8 to 13 units/day
 
+      const tx = await Transaction.create({
+        transactionNumber: `TX-HIST-00${dayAgo}`,
+        items: [{
+          medicineId: med1._id,
+          medicineName: med1.name,
+          batchId: (await Batch.findOne({ medicineId: med1._id }))._id,
+          batchNumber: 'TEST-B001',
+          quantity: consumedQty,
+          unitPrice: 2,
+          subtotal: consumedQty * 2,
+          expiryDate: new Date('2028-09-01')
+        }],
+        subtotal: consumedQty * 2,
+        taxAmount: 0,
+        discountAmount: 0,
+        grandTotal: consumedQty * 2,
+        paymentMethod: 'Cash',
+        paymentStatus: 'Paid',
+        userId: staff._id,
+        staffName: staff.name,
+        branchId: branch._id,
+        date: recordDate
+      });
+
       historicalLogs.push({
         medicineId: med1._id,
         medicineName: med1.name,
@@ -217,7 +503,8 @@ const runManualSeed = async () => {
         batchNumber: 'TEST-B001',
         quantity: consumedQty,
         date: recordDate,
-        transactionNumber: `SEED-HIST-${dayAgo}`,
+        transactionId: tx._id,
+        transactionNumber: tx.transactionNumber,
         userId: staff._id,
         branchId: branch._id
       });
@@ -233,4 +520,85 @@ const runManualSeed = async () => {
   console.log('[Seed] Manual development seed completed successfully.');
 };
 
-module.exports = { runManualSeed };
+const ensureDefaultAccounts = async () => {
+  try {
+    let branch = await Branch.findOne({ code: 'MAIN' });
+    if (!branch) {
+      branch = await Branch.create({
+        name: 'Central Pharmacy Branch',
+        code: 'MAIN',
+        address: 'Central Hospital Complex, Ground Floor',
+        phone: '+91 98765 43210',
+        email: 'central@medstock.ai',
+        isMain: true
+      });
+    }
+
+    // 1. Ensure master admin exists
+    let admin = await User.findOne({ email: 'admin@medstock.ai' });
+    if (!admin) {
+      admin = await User.create({
+        name: 'Dr. Jane Admin',
+        email: 'admin@medstock.ai',
+        password: 'Admin@123456',
+        role: 'admin',
+        branch: branch._id,
+        phone: '+91 98765 00001',
+        isActive: true
+      });
+      console.log('[Seed] Verified Administrator account: admin@medstock.ai / Admin@123456');
+    }
+
+    // 2. Ensure "riya" admin exists
+    let riyaAdmin = await User.findOne({
+      $or: [
+        { email: 'riya@medstock.ai' },
+        { name: new RegExp('^riya$', 'i') }
+      ]
+    });
+    if (!riyaAdmin) {
+      riyaAdmin = await User.create({
+        name: 'riya',
+        email: 'riya@medstock.ai',
+        password: 'Admin@123456',
+        role: 'admin',
+        branch: branch._id,
+        phone: '+91 98765 00003',
+        isActive: true
+      });
+      console.log('[Seed] Verified Administrator account: riya / riya@medstock.ai / Admin@123456');
+    } else {
+      let modified = false;
+      if (riyaAdmin.role !== 'admin') {
+        riyaAdmin.role = 'admin';
+        modified = true;
+      }
+      if (!riyaAdmin.isActive) {
+        riyaAdmin.isActive = true;
+        modified = true;
+      }
+      if (modified) {
+        await riyaAdmin.save();
+      }
+    }
+
+    // 3. Ensure staff account exists
+    let staff = await User.findOne({ email: 'staff@medstock.ai' });
+    if (!staff) {
+      staff = await User.create({
+        name: 'John Pharmacist',
+        email: 'staff@medstock.ai',
+        password: 'Staff@123456',
+        role: 'staff',
+        branch: branch._id,
+        phone: '+91 98765 00002',
+        isActive: true
+      });
+      console.log('[Seed] Verified Staff account: staff@medstock.ai / Staff@123456');
+    }
+  } catch (err) {
+    console.error('[Seed] Error in ensureDefaultAccounts:', err.message);
+  }
+};
+
+module.exports = { runManualSeed, ensureDefaultAccounts };

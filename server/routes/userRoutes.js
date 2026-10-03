@@ -1,16 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, createUser, updateUser } = require('../controllers/userController');
+const {
+  getUsers,
+  createUser,
+  updateUser,
+  getStaffActivity,
+  adminResetPassword
+} = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.use(authorize('admin')); // Only Admin can manage staff users
 
+// Staff Activity Log accessible by Admin and Pharmacist
+router.get('/activity', authorize('admin', 'pharmacist'), getStaffActivity);
+
+// Staff Management endpoints (Admin only)
 router.route('/')
-  .get(getUsers)
-  .post(createUser);
+  .get(authorize('admin'), getUsers)
+  .post(authorize('admin'), createUser);
 
 router.route('/:id')
-  .put(updateUser);
+  .put(authorize('admin'), updateUser);
+
+router.post('/:id/reset-password', authorize('admin'), adminResetPassword);
 
 module.exports = router;
+

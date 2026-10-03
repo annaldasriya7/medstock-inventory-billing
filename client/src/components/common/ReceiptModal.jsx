@@ -53,7 +53,6 @@ const ReceiptModal = ({ transaction, onClose }) => {
             <div>
               <p><span className="text-slate-500">Invoice:</span> <span className="font-mono font-bold">{transaction.transactionNumber}</span></p>
               <p><span className="text-slate-500">Date:</span> {new Date(transaction.date || transaction.createdAt).toLocaleDateString()} {new Date(transaction.date || transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-              <p><span className="text-slate-500">Cashier:</span> {transaction.staffName || 'Staff'}</p>
             </div>
             <div className="text-right">
               <p><span className="text-slate-500">Customer:</span> <span className="font-medium">{transaction.customerName || 'Walk-in'}</span></p>

@@ -70,6 +70,20 @@ const medicineSchema = new mongoose.Schema({
     default: 10,
     min: [1, 'Units per strip must be at least 1']
   },
+  unitOfMeasurement: {
+    type: String,
+    enum: ['Strip', 'Bottle', 'Vial', 'Box', 'Piece', 'Tube', 'Ampoule', 'Other'],
+    default: 'Strip'
+  },
+  storageCondition: {
+    type: String,
+    enum: ['Room Temperature', 'Refrigerated (2°C - 8°C)', 'Cool & Dry (<25°C)', 'Deep Freeze'],
+    default: 'Room Temperature'
+  },
+  prescriptionRequired: {
+    type: Boolean,
+    default: false
+  },
   reorderLevel: {
     type: Number,
     default: 20,

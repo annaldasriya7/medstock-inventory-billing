@@ -16,6 +16,16 @@ router.route('/')
 
 router.post('/scan-lookup', protect, scanLookup);
 
+router.post('/seed', protect, async (req, res, next) => {
+  try {
+    const { runManualSeed } = require('../services/seedService');
+    await runManualSeed();
+    res.json({ success: true, message: 'Medicines added to database successfully.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.route('/:id')
   .get(protect, getMedicineById)
   .put(protect, updateMedicine)

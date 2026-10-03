@@ -24,6 +24,11 @@ import ReportsPage from './pages/ReportsPage';
 import AlertCenterPage from './pages/AlertCenterPage';
 import AiAssistantPage from './pages/AiAssistantPage';
 import SettingsPage from './pages/SettingsPage';
+import StaffManagementPage from './pages/StaffManagementPage';
+import StockReceivingPage from './pages/StockReceivingPage';
+import StockAdjustmentPage from './pages/StockAdjustmentPage';
+import ExpiredQuarantinePage from './pages/ExpiredQuarantinePage';
+import BillHistoryPage from './pages/BillHistoryPage';
 
 // Protected Route Guard
 const ProtectedRoute = () => {
@@ -66,6 +71,11 @@ function App() {
                   <Route path="/medicines" element={<MedicinesPage />} />
                   <Route path="/suppliers" element={<SuppliersPage />} />
                   <Route path="/transactions" element={<TransactionsPage />} />
+                  <Route path="/bill-history" element={<BillHistoryPage />} />
+                  <Route path="/stock-receiving" element={<StockReceivingPage />} />
+                  <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
+                  <Route path="/quarantine" element={<ExpiredQuarantinePage />} />
+                  <Route path="/staff" element={<StaffManagementPage />} />
                   <Route path="/predictions" element={<PredictionsPage />} />
                   <Route path="/expiry-risk" element={<ExpiryRiskPage />} />
                   <Route path="/simulator" element={<WhatIfSimulatorPage />} />

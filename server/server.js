@@ -58,6 +58,9 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/branches', require('./routes/branchRoutes'));
+app.use('/api/stock-receipts', require('./routes/stockReceiptRoutes'));
+app.use('/api/stock-adjustments', require('./routes/stockAdjustmentRoutes'));
+app.use('/api/quarantine', require('./routes/quarantineRoutes'));
 
 // 404 Route Handler
 app.use((req, res, next) => {
@@ -72,16 +75,26 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Initialize Database connection and start server
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Always ensure default admin and staff accounts (including riya admin) exist
+    const { runManualSeed, ensureDefaultAccounts } = require('./services/seedService');
+    await ensureDefaultAccounts();
+
+    // Auto-seed sample medicines if database is empty
+    const Medicine = require('./models/Medicine');
+    const medCount = await Medicine.countDocuments();
+    if (medCount === 0) {
+      console.log('[Database] Empty medicine catalog detected. Adding medicines to database...');
+      await runManualSeed();
+    }
+
     app.listen(PORT, () => {
       console.log(`====================================================`);
       console.log(` MedStock AI Server running on port ${PORT}`);
       console.log(` Health check: http://localhost:${PORT}/api/health`);
-      console.log(` Database starts 100% EMPTY as required.`);
-      console.log(` (Optional dev test data can be loaded via: npm run seed)`);
       console.log(`====================================================`);
     });
   } catch (err) {

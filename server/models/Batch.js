@@ -60,7 +60,7 @@ const batchSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Active', 'Near Expiry', 'Expired', 'Depleted'],
+    enum: ['Active', 'Near Expiry', 'Expired', 'Depleted', 'Quarantined'],
     default: 'Active',
     index: true
   },
@@ -77,6 +77,10 @@ const batchSchema = new mongoose.Schema({
 batchSchema.methods.updateStatus = function () {
   const now = new Date();
   const daysUntilExpiry = Math.ceil((this.expiryDate - now) / (1000 * 60 * 60 * 24));
+
+  if (this.status === 'Quarantined') {
+    return 'Quarantined';
+  }
 
   if (this.quantity <= 0) {
     this.status = 'Depleted';

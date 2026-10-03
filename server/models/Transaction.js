@@ -46,6 +46,11 @@ const transactionItemSchema = new mongoose.Schema({
   },
   expiryDate: {
     type: Date
+  },
+  returnedQuantity: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, { _id: false });
 
@@ -55,6 +60,29 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     unique: true,
     index: true
+  },
+  transactionType: {
+    type: String,
+    enum: ['SALE', 'PURCHASE', 'RETURN'],
+    default: 'SALE',
+    index: true
+  },
+  originalTransactionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transaction',
+    default: null
+  },
+  originalTransactionNumber: {
+    type: String,
+    default: ''
+  },
+  returnReason: {
+    type: String,
+    default: ''
+  },
+  isResellable: {
+    type: Boolean,
+    default: true
   },
   date: {
     type: Date,
@@ -105,6 +133,10 @@ const transactionSchema = new mongoose.Schema({
   staffName: {
     type: String,
     default: 'Staff'
+  },
+  staffRole: {
+    type: String,
+    default: 'staff'
   },
   branchId: {
     type: mongoose.Schema.Types.ObjectId,

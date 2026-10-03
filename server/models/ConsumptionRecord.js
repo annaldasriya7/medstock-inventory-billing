@@ -34,7 +34,7 @@ const consumptionRecordSchema = new mongoose.Schema({
   transactionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Transaction',
-    required: true,
+    default: null,
     index: true
   },
   transactionNumber: {

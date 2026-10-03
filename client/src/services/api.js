@@ -41,6 +41,10 @@ export const api = {
   register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
   login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   getMe: () => request('/auth/me'),
+  forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
+  verifyResetOtp: (payload) => request('/auth/verify-reset-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) }),
+  changePassword: (payload) => request('/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Medicines
   getMedicines: (params = '') => request(`/medicines${params ? `?${params}` : ''}`),
@@ -67,6 +71,7 @@ export const api = {
   createSale: (payload) => request('/transactions', { method: 'POST', body: JSON.stringify(payload) }),
   getTransactions: (params = '') => request(`/transactions${params ? `?${params}` : ''}`),
   getTransactionById: (id) => request(`/transactions/${id}`),
+  processSalesReturn: (id, payload) => request(`/transactions/${id}/return`, { method: 'POST', body: JSON.stringify(payload) }),
 
   // Consumption
   getConsumption: (params = '') => request(`/consumption${params ? `?${params}` : ''}`),
@@ -104,8 +109,29 @@ export const api = {
   createBranch: (payload) => request('/branches', { method: 'POST', body: JSON.stringify(payload) }),
   getRedistributionSuggestions: () => request('/branches/redistribution'),
 
-  // Users
+  // Users & Staff Activity
   getUsers: () => request('/users'),
   createUser: (payload) => request('/users', { method: 'POST', body: JSON.stringify(payload) }),
-  updateUser: (id, payload) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
+  updateUser: (id, payload) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  adminResetPassword: (id) => request(`/users/${id}/reset-password`, { method: 'POST' }),
+  getStaffActivity: (params = '') => request(`/users/activity${params ? `?${params}` : ''}`),
+
+  // Stock Receipts (Stock Receiving)
+  getStockReceipts: (params = '') => request(`/stock-receipts${params ? `?${params}` : ''}`),
+  getStockReceiptById: (id) => request(`/stock-receipts/${id}`),
+  receiveStock: (payload) => request('/stock-receipts', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Stock Adjustments
+  getStockAdjustments: (params = '') => request(`/stock-adjustments${params ? `?${params}` : ''}`),
+  getStockAdjustmentById: (id) => request(`/stock-adjustments/${id}`),
+  adjustStock: (payload) => request('/stock-adjustments', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Expired & Quarantine
+  getQuarantineOverview: () => request('/quarantine'),
+  getQuarantineRecords: (params = '') => request(`/quarantine/records${params ? `?${params}` : ''}`),
+  moveToQuarantine: (payload) => request('/quarantine/move', { method: 'POST', body: JSON.stringify(payload) }),
+  performQuarantineAction: (payload) => request('/quarantine/action', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Bill Reprint Log
+  logBillReprint: (transactionId) => request(`/transactions/${transactionId}/reprint-log`, { method: 'POST' })
 };

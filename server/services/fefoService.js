@@ -6,10 +6,12 @@ const Medicine = require('../models/Medicine');
  * Used by POS billing to inform cashier exactly which batches will be drawn.
  */
 const previewFefoAllocation = async (medicineId, requestedQuantity, branchId = null) => {
+  const now = new Date();
   const query = {
     medicineId,
     quantity: { $gt: 0 },
-    status: { $ne: 'Expired' }
+    status: { $nin: ['Expired', 'Quarantined'] },
+    expiryDate: { $gt: now }
   };
   if (branchId) {
     query.branch = branchId;

@@ -50,3 +50,27 @@
     display: none !important;
   }
 }
+
+/* Medicine Barcode & QR Camera Scanner Styling */
+#qr-reader {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1rem !important;
+}
+#qr-reader__scan_region {
+  min-height: 200px !important;
+  border-radius: 1rem !important;
+}
+#qr-reader__dashboard {
+  display: none !important;
+}
+

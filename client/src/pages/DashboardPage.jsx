@@ -16,7 +16,9 @@ import {
   PlusCircle,
   ScanLine,
   ShoppingCart,
-  RefreshCw
+  RefreshCw,
+  PackagePlus,
+  Bell
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -49,19 +51,17 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // KPIs
+  // 9 Required KPIs
   const [kpi, setKpi] = useState({
     totalMedicines: 0,
-    totalBatches: 0,
     totalStockUnits: 0,
     todaySales: 0,
+    todayRevenue: 0,
     lowStockMeds: 0,
-    criticalStockMeds: 0,
     nearExpiryBatches: 0,
     expiredBatches: 0,
-    predictedStockouts: 0,
-    potentialWastageUnits: 0,
-    potentialWastageValue: 0
+    stockoutRisk: 0,
+    pendingAlerts: 0
   });
 
   const [healthScore, setHealthScore] = useState({
@@ -88,7 +88,8 @@ const DashboardPage = () => {
         consumptionRes,
         expiryRes,
         healthRes,
-        predRes
+        predRes,
+        alertsRes
       ] = await Promise.all([
         api.getMedicines('limit=200'),
         api.getBatches('limit=200'),
@@ -96,12 +97,14 @@ const DashboardPage = () => {
         api.getConsumptionReport('filter=last30days'),
         api.getExpiryReport(),
         api.getHealthScore(),
-        api.getPredictions()
+        api.getPredictions(),
+        api.getAlerts()
       ]);
 
       const medicines = medsRes.medicines || [];
       const batches = batchesRes.batches || [];
       const predictions = predRes.predictions || [];
+      const alerts = alertsRes.alerts || [];
 
       // Calculate stock status distribution
       const statusCounts = { Healthy: 0, Low: 0, Critical: 0, 'Out of Stock': 0, Overstocked: 0 };
@@ -120,33 +123,33 @@ const DashboardPage = () => {
       let expCount = expiryRes.summary?.expiredCount || 0;
       let safeCount = (batches.length - nearExpCount - critExpCount - expCount);
 
-      // Predicted stock-outs
-      const stockouts = predictions.filter(p => p.stockoutRiskLevel === 'Critical' || p.stockoutRiskLevel === 'High').length;
+      // Predicted stock-outs and zero-stock items
+      const predictedStockouts = predictions.filter(p => p.stockoutRiskLevel === 'Critical' || p.stockoutRiskLevel === 'High').length;
+      const zeroStockMeds = medicines.filter(m => (m.currentStock ?? m.totalStock ?? 0) === 0).length;
+      const totalStockoutRisk = zeroStockMeds + predictedStockouts;
 
-      // Potential wastage
-      const totalWastageUnits = predictions.reduce((sum, p) => sum + (p.potentialWastageUnits || 0), 0);
-      const totalWastageVal = predictions.reduce((sum, p) => sum + (p.potentialFinancialLoss || 0), 0);
+      // Unread alerts count
+      const unreadAlerts = alerts.filter(a => !a.isRead).length;
 
-      // Today's Sales calculation
+      // Today's Sales and Revenue calculation
       const todayStr = new Date().toISOString().split('T')[0];
       const todaySalesRecord = salesRes.dailyTrend?.find(d => d.date === todayStr);
-      const todaySalesVal = todaySalesRecord ? todaySalesRecord.sales : 0;
+      const todaySalesCount = todaySalesRecord ? (todaySalesRecord.transactions || 0) : 0;
+      const todayRevenueVal = todaySalesRecord ? (todaySalesRecord.sales || 0) : 0;
 
       // Total Stock units
       const totalStock = batches.filter(b => b.status !== 'Expired').reduce((sum, b) => sum + b.quantity, 0);
 
       setKpi({
-        totalMedicines: medsRes.total || 0,
-        totalBatches: batchesRes.total || 0,
+        totalMedicines: medsRes.total || medicines.length,
         totalStockUnits: totalStock,
-        todaySales: todaySalesVal,
-        lowStockMeds: lowCount,
-        criticalStockMeds: critCount,
+        todaySales: todaySalesCount,
+        todayRevenue: todayRevenueVal,
+        lowStockMeds: lowCount + critCount,
         nearExpiryBatches: nearExpCount + critExpCount,
         expiredBatches: expCount,
-        predictedStockouts: stockouts,
-        potentialWastageUnits: totalWastageUnits,
-        potentialWastageValue: totalWastageVal
+        stockoutRisk: totalStockoutRisk,
+        pendingAlerts: unreadAlerts
       });
 
       setHealthScore(healthRes.health || { score: 100, rating: 'Optimal', explanation: '' });
@@ -215,6 +218,14 @@ const DashboardPage = () => {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Sync</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/stock-receiving')}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
+          >
+            <PackagePlus className="w-4 h-4 text-blue-600" />
+            <span>Receive Stock</span>
           </button>
 
           <button
@@ -299,126 +310,123 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* KPI Cards Grid (Requirement 7) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
-        {/* Total Medicines */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      {/* 9 Key Performance Metrics (Requirement 2) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3.5">
+        {/* 1. Total Medicines */}
+        <div
+          onClick={() => navigate('/medicines')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Medicines</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">1. Total Medicines</span>
             <Boxes className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-2xl font-bold text-slate-900 tracking-tight">{kpi.totalMedicines}</p>
-          <span className="text-[10px] text-slate-500">Catalog items</span>
+          <span className="text-[10px] text-slate-500">Active medicines in catalog</span>
         </div>
 
-        {/* Total Batches */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 2. Total Stock */}
+        <div
+          onClick={() => navigate('/inventory')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Batches</span>
-            <Layers className="w-4 h-4 text-indigo-500" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">{kpi.totalBatches}</p>
-          <span className="text-[10px] text-slate-500">Active lot records</span>
-        </div>
-
-        {/* Total Stock Units */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Stock</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">2. Total Stock</span>
             <Package className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-slate-900 tracking-tight">{kpi.totalStockUnits}</p>
-          <span className="text-[10px] text-slate-500">Units across batches</span>
+          <span className="text-[10px] text-slate-500">Physical units across batches</span>
         </div>
 
-        {/* Today's Sales */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 3. Today's Sales */}
+        <div
+          onClick={() => navigate('/bill-history')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Today's Sales</span>
-            <IndianRupee className="w-4 h-4 text-emerald-600" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">3. Today's Sales</span>
+            <ShoppingCart className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">₹{kpi.todaySales.toFixed(0)}</p>
-          <span className="text-[10px] text-slate-500">Completed checkout</span>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{kpi.todaySales}</p>
+          <span className="text-[10px] text-slate-500">Invoices billed today</span>
         </div>
 
-        {/* Low Stock Medicines */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 4. Today's Revenue */}
+        <div
+          onClick={() => navigate('/transactions')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-purple-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Low Stock</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">4. Today's Revenue</span>
+            <IndianRupee className="w-4 h-4 text-purple-600" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">₹{kpi.todayRevenue.toFixed(2)}</p>
+          <span className="text-[10px] text-slate-500">Total revenue generated today</span>
+        </div>
+
+        {/* 5. Low Stock Medicines */}
+        <div
+          onClick={() => navigate('/inventory')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-amber-300 transition-colors"
+        >
+          <div className="flex items-center justify-between text-slate-400 mb-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">5. Low Stock Medicines</span>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           </div>
           <p className="text-2xl font-bold text-amber-600 tracking-tight">{kpi.lowStockMeds}</p>
-          <span className="text-[10px] text-slate-500">Under reorder level</span>
+          <span className="text-[10px] text-slate-500">At or below reorder level</span>
         </div>
 
-        {/* Critical Stock Medicines */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 6. Near Expiry Medicines */}
+        <div
+          onClick={() => navigate('/alerts')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-orange-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Critical Stock</span>
-            <AlertOctagon className="w-4 h-4 text-rose-500" />
-          </div>
-          <p className="text-2xl font-bold text-rose-600 tracking-tight">{kpi.criticalStockMeds}</p>
-          <span className="text-[10px] text-slate-500">Immediate order needed</span>
-        </div>
-
-        {/* Near Expiry Medicines */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Near Expiry</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">6. Near Expiry</span>
             <Clock className="w-4 h-4 text-orange-500" />
           </div>
           <p className="text-2xl font-bold text-orange-600 tracking-tight">{kpi.nearExpiryBatches}</p>
-          <span className="text-[10px] text-slate-500">Expiring in 90 days</span>
+          <span className="text-[10px] text-slate-500">Batches expiring within 90 days</span>
         </div>
 
-        {/* Expired Medicines */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 7. Expired Medicines */}
+        <div
+          onClick={() => navigate('/alerts')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-rose-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Expired Batches</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">7. Expired Medicines</span>
             <Skull className="w-4 h-4 text-rose-600" />
           </div>
           <p className="text-2xl font-bold text-rose-700 tracking-tight">{kpi.expiredBatches}</p>
-          <span className="text-[10px] text-slate-500">Quarantine required</span>
+          <span className="text-[10px] text-slate-500">Batches past expiry date</span>
         </div>
 
-        {/* Predicted Stock-outs */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 8. Stock-Out Risk */}
+        <div
+          onClick={() => navigate('/alerts')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-purple-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Predicted Stockouts</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">8. Stock-Out Risk</span>
             <TrendingDown className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="text-2xl font-bold text-purple-600 tracking-tight">{kpi.predictedStockouts}</p>
-          <span className="text-[10px] text-slate-500">AI forecasted risks</span>
+          <p className="text-2xl font-bold text-purple-600 tracking-tight">{kpi.stockoutRisk}</p>
+          <span className="text-[10px] text-slate-500">Zero stock / Forecasted stockouts</span>
         </div>
 
-        {/* Potential Wastage Units */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* 9. Pending Alerts */}
+        <div
+          onClick={() => navigate('/alerts')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-rose-300 transition-colors"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Potential Wastage</span>
-            <Trash2 className="w-4 h-4 text-amber-600" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">9. Pending Alerts</span>
+            <Bell className="w-4 h-4 text-rose-500" />
           </div>
-          <p className="text-2xl font-bold text-amber-700 tracking-tight">{kpi.potentialWastageUnits}</p>
-          <span className="text-[10px] text-slate-500">Estimated unconsumed</span>
-        </div>
-
-        {/* Potential Financial Loss */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">At-Risk Value</span>
-            <IndianRupee className="w-4 h-4 text-red-500" />
-          </div>
-          <p className="text-2xl font-bold text-red-600 tracking-tight">₹{kpi.potentialWastageValue.toFixed(0)}</p>
-          <span className="text-[10px] text-slate-500">Expiry cost exposure</span>
-        </div>
-
-        {/* System Mode */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">FEFO Protocol</span>
-            <Activity className="w-4 h-4 text-emerald-500" />
-          </div>
-          <p className="text-lg font-bold text-emerald-600 tracking-tight">ENFORCED</p>
-          <span className="text-[10px] text-slate-500">Auto Earliest Expiry</span>
+          <p className="text-2xl font-bold text-rose-600 tracking-tight">{kpi.pendingAlerts}</p>
+          <span className="text-[10px] text-slate-500">Unread notifications</span>
         </div>
       </div>
 

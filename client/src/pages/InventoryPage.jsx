@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingDown,
-  RefreshCw
+  RefreshCw,
+  PackagePlus
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -94,6 +95,13 @@ const InventoryPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/stock-receiving')}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors shadow-xs"
+          >
+            <PackagePlus className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Receive Stock</span>
+          </button>
           <button
             onClick={() => navigate('/scan')}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors shadow-xs"

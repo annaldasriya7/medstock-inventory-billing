@@ -3,6 +3,7 @@ const Batch = require('../models/Batch');
 const Supplier = require('../models/Supplier');
 const SystemSettings = require('../models/SystemSettings');
 const { syncInventoryAlerts } = require('../services/alertService');
+const { logStaffActivity } = require('../utils/auditLogger');
 
 // Get all medicines with inventory aggregation
 exports.getMedicines = async (req, res, next) => {
@@ -12,6 +13,9 @@ exports.getMedicines = async (req, res, next) => {
     const query = { active: true };
     if (category && category !== 'All') query.category = category;
     if (branch) query.branch = branch;
+    if (req.query.prescriptionRequired !== undefined && req.query.prescriptionRequired !== 'All') {
+      query.prescriptionRequired = req.query.prescriptionRequired === 'true' || req.query.prescriptionRequired === true;
+    }
 
     if (search) {
       const searchRegex = new RegExp(search.trim(), 'i');
@@ -42,7 +46,7 @@ exports.getMedicines = async (req, res, next) => {
     const populated = await Promise.all(
       medicines.map(async (med) => {
         const batches = await Batch.find({ medicineId: med._id }).sort({ expiryDate: 1 });
-        const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now);
+        const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now && b.status !== 'Expired' && b.status !== 'Quarantined');
         const totalStock = validBatches.reduce((sum, b) => sum + b.quantity, 0);
 
         // Find nearest expiry date
@@ -107,15 +111,18 @@ exports.scanLookup = async (req, res, next) => {
     }
 
     const cleanCode = code.trim();
+    const escapedCode = cleanCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Check by barcode, qrCode, dataMatrix, or name
+    // Check by barcode, qrCode, dataMatrix, or name (exact or case-insensitive)
     const query = {
       active: true,
       $or: [
         { barcode: cleanCode },
         { qrCode: cleanCode },
         { dataMatrix: cleanCode },
-        { name: new RegExp(`^${cleanCode}$`, 'i') }
+        { barcode: new RegExp(`^${escapedCode}$`, 'i') },
+        { qrCode: new RegExp(`^${escapedCode}$`, 'i') },
+        { name: new RegExp(`^${escapedCode}$`, 'i') }
       ]
     };
     if (branch) query.branch = branch;
@@ -134,7 +141,7 @@ exports.scanLookup = async (req, res, next) => {
     // Fetch batches for existing medicine
     const batches = await Batch.find({ medicineId: medicine._id }).sort({ expiryDate: 1 });
     const now = new Date();
-    const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now);
+    const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now && b.status !== 'Expired' && b.status !== 'Quarantined');
     const totalStock = validBatches.reduce((sum, b) => sum + b.quantity, 0);
 
     res.json({
@@ -223,6 +230,9 @@ exports.createMedicine = async (req, res, next) => {
       dataMatrix: dataMatrix ? dataMatrix.trim() : '',
       description: description ? description.trim() : '',
       unitsPerStrip: unitsPerStrip || 10,
+      unitOfMeasurement: req.body.unitOfMeasurement || 'Strip',
+      storageCondition: req.body.storageCondition || 'Room Temperature',
+      prescriptionRequired: Boolean(req.body.prescriptionRequired),
       reorderLevel: reorderLevel !== undefined ? Number(reorderLevel) : 20,
       maximumStock: maximumStock !== undefined ? Number(maximumStock) : 500,
       supplier: supplier || null,
@@ -251,6 +261,20 @@ exports.createMedicine = async (req, res, next) => {
       await createdBatch.save();
     }
 
+    // Log staff activity
+    if (req.user) {
+      await logStaffActivity({
+        userId: req.user._id,
+        staffName: req.user.name,
+        role: req.user.role,
+        actionType: 'MEDICINE_CREATED',
+        description: `Registered new medicine "${medicine.name}" (${medicine.dosageForm}, ${medicine.category})`,
+        referenceId: medicine._id.toString(),
+        referenceModel: 'Medicine',
+        details: { medicineName: medicine.name, initialBatch: createdBatch?.batchNumber }
+      });
+    }
+
     // Trigger alert recalculation
     syncInventoryAlerts(branch).catch(e => console.error('[Alert Sync Error]', e.message));
 
@@ -277,6 +301,18 @@ exports.updateMedicine = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Medicine not found.' });
     }
 
+    if (req.user) {
+      await logStaffActivity({
+        userId: req.user._id,
+        staffName: req.user.name,
+        role: req.user.role,
+        actionType: 'MEDICINE_UPDATED',
+        description: `Updated medicine details for "${medicine.name}"`,
+        referenceId: medicine._id.toString(),
+        referenceModel: 'Medicine'
+      });
+    }
+
     res.json({
       success: true,
       message: 'Medicine updated successfully.',
@@ -297,7 +333,7 @@ exports.getMedicineById = async (req, res, next) => {
 
     const batches = await Batch.find({ medicineId: medicine._id }).sort({ expiryDate: 1 });
     const now = new Date();
-    const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now);
+    const validBatches = batches.filter(b => b.quantity > 0 && new Date(b.expiryDate) > now && b.status !== 'Expired' && b.status !== 'Quarantined');
     const totalStock = validBatches.reduce((sum, b) => sum + b.quantity, 0);
 
     res.json({
@@ -317,6 +353,18 @@ exports.deleteMedicine = async (req, res, next) => {
     const medicine = await Medicine.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
     if (!medicine) {
       return res.status(404).json({ success: false, message: 'Medicine not found.' });
+    }
+
+    if (req.user) {
+      await logStaffActivity({
+        userId: req.user._id,
+        staffName: req.user.name,
+        role: req.user.role,
+        actionType: 'MEDICINE_DEACTIVATED',
+        description: `Deactivated medicine "${medicine.name}" from active catalog`,
+        referenceId: medicine._id.toString(),
+        referenceModel: 'Medicine'
+      });
     }
 
     res.json({
